@@ -1,8 +1,8 @@
 # St. Louis GHG Knowledge-Based Decision Intelligence
 
 Reproducible code for the short communication **“Data-Driven AI and
-Knowledge-Based Decision Intelligence for Long-Term GHG Forecasting:
-Evidence from the St. Louis Region.”**
+Knowledge-Based Decision Intelligence for St. Louis GHG Projections and
+Emissions Reduction Planning.”**
 
 The study aggregates public NREL SLOPE county projections for the 15-county
 St. Louis MO–IL metropolitan statistical area, tests a knowledge-guided
@@ -27,10 +27,9 @@ fast, deterministic rerun.
 
 ## Google Colab
 
-Open `stl_ghg_decision_intelligence.ipynb` in Colab, replace the placeholder
-`REPOSITORY_URL` with the repository's published URL, and run both cells. The notebook installs the
-pinned environment, executes the same analysis, and previews the two figures
-and tables.
+Open `stl_ghg_decision_intelligence.ipynb` in Colab and run both cells. The
+notebook already points to this repository, installs the pinned environment,
+executes the same analysis, and previews the two figures and tables.
 
 ## Compact repository map
 
