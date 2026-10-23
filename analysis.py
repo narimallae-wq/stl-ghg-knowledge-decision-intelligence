@@ -598,18 +598,67 @@ def make_figure_1(panel: pd.DataFrame, predictions: pd.DataFrame) -> None:
     plt.close(fig)
 
 
-def make_figure_2(ranking: pd.DataFrame) -> None:
-    sns.set_theme(style="whitegrid", context="paper", font_scale=1.10)
-    plot = ranking.sort_values("Cumulative_avoided_2026_2050_MMTCO2")
-    colors = ["#2E8B57" if "grid" in name.lower() else "#6A3D9A" for name in plot["Portfolio"]]
-    fig, ax = plt.subplots(figsize=(8.7, 5.3), constrained_layout=True)
-    x = plot["Cumulative_avoided_2026_2050_MMTCO2"].to_numpy()
-    ax.barh(plot["Portfolio"], x, color=colors, alpha=0.92)
-    ax.axvline(0, color="#444444", lw=0.9)
-    ax.set_xlabel("Cumulative avoided energy-related CO$_2$, 2026-2050 (MMTCO$_2$)")
-    ax.set_ylabel("")
-    ax.set_title("Knowledge-based ranking of clean-energy and building portfolios")
-    ax.grid(axis="y", visible=False)
+def make_figure_2(panel: pd.DataFrame) -> None:
+    """Show the two leading integrated portfolios as projection trajectories."""
+    sns.set_theme(style="whitegrid", context="paper", font_scale=1.15)
+    scenarios = {
+        "reference": ("Reference", "#4D4D4D"),
+        "grid_2035_electrification": ("2035 grid + electrification", "#1B9E77"),
+        "grid_2035_efficiency": ("2035 grid + building efficiency", "#6A3D9A"),
+    }
+    regional = (
+        panel[panel["scenario"].isin(scenarios)]
+        .groupby(["scenario", "year"], observed=True)["emissions_mmtco2"]
+        .sum()
+        .reset_index()
+    )
+    pivot = regional.pivot(index="year", columns="scenario", values="emissions_mmtco2")
+    decision_years = pivot.loc[2026:2050].index
+
+    fig, axes = plt.subplots(1, 2, figsize=(12.4, 4.8), constrained_layout=True)
+    for scenario, (label, color) in scenarios.items():
+        series = pivot[scenario]
+        axes[0].plot(series.index, series, color=color, lw=2.4, label=label)
+    axes[0].axvline(2035, color="#777777", lw=1.0, ls="--")
+    axes[0].set_title("(a) Regional emissions pathways")
+    axes[0].set_xlabel("Year")
+    axes[0].set_ylabel("Energy-related CO$_2$ (MMTCO$_2$)")
+    axes[0].legend(frameon=False, fontsize=8, loc="best")
+
+    reference = pivot.loc[decision_years, "reference"]
+    for scenario in ["grid_2035_electrification", "grid_2035_efficiency"]:
+        label, color = scenarios[scenario]
+        cumulative = (reference - pivot.loc[decision_years, scenario]).cumsum()
+        axes[1].plot(
+            cumulative.index,
+            cumulative,
+            color=color,
+            lw=2.4,
+            marker="o",
+            markevery=[9, -1],
+            ms=4.5,
+            label=label,
+        )
+        axes[1].annotate(
+            f"{cumulative.iloc[-1]:.1f}",
+            xy=(cumulative.index[-1], cumulative.iloc[-1]),
+            xytext=(-4, 7),
+            textcoords="offset points",
+            ha="right",
+            color=color,
+            fontsize=8,
+        )
+    axes[1].axhline(0, color="#777777", lw=0.9)
+    axes[1].set_title("(b) Cumulative avoided emissions, 2026-2050")
+    axes[1].set_xlabel("Year")
+    axes[1].set_ylabel("Cumulative avoided CO$_2$ (MMTCO$_2$)")
+    axes[1].legend(frameon=False, fontsize=8, loc="upper left")
+
+    fig.suptitle(
+        "St. Louis clean-energy portfolio projections and cumulative benefits",
+        fontsize=13,
+        y=1.03,
+    )
     fig.savefig(OUTPUT_DIR / "figure_2_decision_ranking.png", dpi=350, bbox_inches="tight")
     plt.close(fig)
 
@@ -620,7 +669,7 @@ def main(refresh_data: bool = False) -> None:
     performance, predictions, selected_depth = evaluate_models(panel)
     ranking = decision_ranking(panel)
     make_figure_1(panel, predictions)
-    make_figure_2(ranking)
+    make_figure_2(panel)
 
     baseline_2022 = panel[
         (panel["scenario"] == "reference") & (panel["year"] == 2022)

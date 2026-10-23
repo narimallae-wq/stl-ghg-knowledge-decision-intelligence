@@ -8,7 +8,9 @@ The study aggregates public NREL SLOPE county projections for the 15-county
 St. Louis MO–IL metropolitan statistical area, tests a knowledge-guided
 XGBoost model against three baselines on an untouched 2043–2050 interval,
 and ranks regional intervention portfolios through 2050. The pipeline creates
-exactly two manuscript figures and two result tables.
+exactly two manuscript figures and two result tables. Figure 2 presents the two
+leading integrated portfolios as annual pathways and cumulative avoided-emissions
+trajectories rather than as a bar-chart ranking.
 
 ## Reproduce in Git Bash
 
