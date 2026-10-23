@@ -514,8 +514,6 @@ def decision_ranking(panel: pd.DataFrame) -> pd.DataFrame:
                 "Reduction_2035_pct": pct_2035,
                 "Reduction_2050_pct": pct_2050,
                 "First_year_at_least_20pct": threshold_years[0] if threshold_years else "Not reached",
-                "Sensitivity_low_MMTCO2": cumulative,
-                "Sensitivity_high_MMTCO2": cumulative,
                 "Decision_status": (
                     "Not recommended alone"
                     if cumulative <= 0 or pct_2050 <= 0
@@ -525,45 +523,6 @@ def decision_ranking(panel: pd.DataFrame) -> pd.DataFrame:
                 ),
             }
         )
-
-    # Knowledge-rule sensitivity for compact urban form, transit, walking, and cycling.
-    # The GGRP supplies the mode-shift policy target; because SLOPE does not model land-use
-    # or VMT policy directly, the emissions response is deliberately presented as a 5-15%
-    # sensitivity band around a 10% reduction in non-electric transportation by 2050.
-    reference_transport = (
-        panel[
-            (panel["scenario"] == "reference")
-            & (panel["component"] == "TRANSPORTATION_NON-ELECTRIC")
-        ]
-        .groupby("year")["emissions_mmtco2"]
-        .sum()
-    )
-
-    def urban_avoided(final_fraction: float) -> pd.Series:
-        years = reference_transport.index.to_numpy()
-        fraction = np.clip((years - 2026) / (2050 - 2026), 0, 1) * final_fraction
-        return pd.Series(reference_transport.to_numpy() * fraction, index=years)
-
-    urban_low = urban_avoided(0.05)
-    urban_mid = urban_avoided(0.10)
-    urban_high = urban_avoided(0.15)
-    urban_pct_2035 = 100 * urban_mid.loc[2035] / reference.loc[2035]
-    urban_pct_2050 = 100 * urban_mid.loc[2050] / reference.loc[2050]
-    urban_threshold = (urban_mid / reference) >= 0.20
-    urban_years = urban_threshold[urban_threshold].index.tolist()
-    rows.append(
-        {
-            "Portfolio": "Transit and active-travel planning",
-            "Evidence": "GGRP rule + 5-15% VMT sensitivity",
-            "Cumulative_avoided_2026_2050_MMTCO2": urban_mid.loc[2026:2050].sum(),
-            "Reduction_2035_pct": urban_pct_2035,
-            "Reduction_2050_pct": urban_pct_2050,
-            "First_year_at_least_20pct": urban_years[0] if urban_years else "Not reached",
-            "Sensitivity_low_MMTCO2": urban_low.loc[2026:2050].sum(),
-            "Sensitivity_high_MMTCO2": urban_high.loc[2026:2050].sum(),
-            "Decision_status": "Complementary sensitivity",
-        }
-    )
 
     ranking = pd.DataFrame(rows).sort_values(
         "Cumulative_avoided_2026_2050_MMTCO2", ascending=False
@@ -643,36 +602,14 @@ def make_figure_2(ranking: pd.DataFrame) -> None:
     sns.set_theme(style="whitegrid", context="paper", font_scale=1.10)
     plot = ranking.sort_values("Cumulative_avoided_2026_2050_MMTCO2")
     colors = ["#2E8B57" if "grid" in name.lower() else "#6A3D9A" for name in plot["Portfolio"]]
-    colors = ["#D95F02" if "Transit" in name else color for name, color in zip(plot["Portfolio"], colors, strict=True)]
-    fig, ax = plt.subplots(figsize=(8.7, 5.7), constrained_layout=True)
+    fig, ax = plt.subplots(figsize=(8.7, 5.3), constrained_layout=True)
     x = plot["Cumulative_avoided_2026_2050_MMTCO2"].to_numpy()
-    low = plot["Sensitivity_low_MMTCO2"].to_numpy()
-    high = plot["Sensitivity_high_MMTCO2"].to_numpy()
     ax.barh(plot["Portfolio"], x, color=colors, alpha=0.92)
     ax.axvline(0, color="#444444", lw=0.9)
-    ax.errorbar(
-        x,
-        np.arange(len(plot)),
-        xerr=np.vstack([x - low, high - x]),
-        fmt="none",
-        ecolor="#333333",
-        capsize=3,
-        lw=1.1,
-    )
     ax.set_xlabel("Cumulative avoided energy-related CO$_2$, 2026-2050 (MMTCO$_2$)")
     ax.set_ylabel("")
-    ax.set_title("Knowledge-based ranking of regional intervention portfolios")
+    ax.set_title("Knowledge-based ranking of clean-energy and building portfolios")
     ax.grid(axis="y", visible=False)
-    ax.text(
-        0.99,
-        0.02,
-        "Error bar denotes the 5-15% VMT sensitivity only",
-        transform=ax.transAxes,
-        ha="right",
-        va="bottom",
-        fontsize=8,
-        color="#555555",
-    )
     fig.savefig(OUTPUT_DIR / "figure_2_decision_ranking.png", dpi=350, bbox_inches="tight")
     plt.close(fig)
 

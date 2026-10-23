@@ -45,8 +45,8 @@ NREL SLOPE supplies annual **energy-related CO2 scenario projections**, not
 observed future emissions and not a complete community GHG inventory. The
 East-West Gateway 2022 inventory (44.5 MMTCO2e) is used only as an external
 boundary check because its gases, sectors, and accounting methods differ.
-The urban-planning row is a transparent 5–15% vehicle-miles-traveled
-sensitivity rule; it is not an NREL scenario. Results support comparative
+The decision ranking is restricted to the supplied NREL clean-electricity,
+electrification, and building-efficiency scenarios. Results support comparative
 planning under stated assumptions and should not be read as certain 2050
 predictions.
 
